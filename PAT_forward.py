@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 
 class PAT_forward(mm.PyModPiece):
     
-    def __init__(self, time_final, numSteps, c, V, numObs, nx):
+    def __init__(self, time_final, numSteps, c, V, numObs, nx, FULLBOUNDARY):
         """ 
         INPUTS:
         
@@ -19,6 +19,7 @@ class PAT_forward(mm.PyModPiece):
         np.random.seed(1337)
         self.obs_indices = np.random.choice(V.dim(), numObs) 
         
+        side_obs = set([4])
         obs = set([4])
         cur_obs_ver = 4
         cur_obs_hor = 4
@@ -28,6 +29,7 @@ class PAT_forward(mm.PyModPiece):
             cur_obs_ver += ver_incr
             ver_incr += 1
             obs.add(cur_obs_ver)
+            side_obs.add(cur_obs_ver)
     
             cur_obs_hor += hor_incr
             hor_incr += 1
@@ -45,17 +47,22 @@ class PAT_forward(mm.PyModPiece):
     
             cur_obs_hor += hor_incr
             hor_incr -= 1
-            obs.add(cur_obs_hor)
-        self.obs_indices = list(obs)
-        self.numObs = 2*(nx-1)+2*(nx-3)
+            obs.add(cur_obs_hor)     
         
-#         f = dl.Function(V)
-#         vals = np.zeros(V.dim())
-#         vals[self.obs_indices] = 50
-#         f.vector().set_local(vals)
-#         nb.plot(f)
-#         plt.title("observation locations")
-#         plt.show()
+        if FULLBOUNDARY:
+            self.obs_indices = list(obs)
+            self.numObs = 2*(nx-1)+2*(nx-3)
+        else:
+            self.numObs = (nx-1)
+            self.obs_indices = list(side_obs)
+        
+        f = dl.Function(V)
+        vals = np.zeros(V.dim())
+        vals[self.obs_indices] = 50
+        f.vector().set_local(vals)
+        nb.plot(f)
+        plt.title("observation locations")
+        plt.show()
         
         self.T_f = time_final
         self.numSteps = numSteps
@@ -66,7 +73,7 @@ class PAT_forward(mm.PyModPiece):
         self.v = dl.TestFunction(self.V)
         
     def ObservationOperator(self, p):
-        p_arr = p.vector().get_local()
+        p_arr = p.vector().get_local()      
         return p_arr[self.obs_indices]
             
     def EvaluateImpl(self, inputs):
