@@ -35,12 +35,15 @@ class PAT_forward(mm.PyModPiece):
         """
         numObs = self.numObs
         numSteps = self.numSteps
+        # Each 
         output = np.zeros((numObs * numSteps))
         m = dl.Function(self.V)
         m.vector().set_local(inputs[0])
         
-        p_n = dl.interpolate(m, self.V)
-        p_nm1 = dl.interpolate(m, self.V)
+        p_n = dl.Function(self.V)
+        p_nm1 = dl.Function(self.V)
+        p_n.vector().set_local(m.vector().array()[:])
+        p_nm1vector().set_local(m.vector().array()[:])
         p_trial = self.p_trial
         v = self.v
         
