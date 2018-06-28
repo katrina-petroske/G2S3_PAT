@@ -2,30 +2,40 @@ import sys
 sys.path.insert(0,'/home/fenics/Installations/MUQ_INSTALL/lib')
 import pymuqModeling as mm
 import dolfin as dl
+import numpy as np
 
 class PAT_forward(mm.PyModPiece):
     
-    def __init__(self, time_final, numSteps, c, V):
+    def __init__(self, time_final, numSteps, c, V, numObs):
         """ 
         INPUTS:
         
         
         """
-        mm.PyModPiece.__init__(self, [V.dim()],[V.dim()])
-                  
+        mm.PyModPiece.__init__(self, [V.dim()],[numObs * numSteps])
+        
+        np.random.seed(1337)
+        self.obs_indices = np.random.choice(V.dim(), numObs)          
         self.T_f = time_final
         self.numSteps = numSteps
         self.dt = self.T_f / self.numSteps
         self.c = c
         self.V = V
-        
+        self.numObs = numObs
         self.p_trial = dl.TrialFunction(self.V)
         self.v = dl.TestFunction(self.V)
+        
+    def ObservationOperator(self, p):
+        p_arr = p.vector().get_local()
+        return p_arr[0:self.numObs]
             
     def EvaluateImpl(self, inputs):
         """
         
         """
+        numObs = self.numObs
+        numSteps = self.numSteps
+        output = np.zeros((numObs * numSteps))
         m = dl.Function(self.V)
         m.vector().set_local(inputs[0])
         
@@ -41,15 +51,20 @@ class PAT_forward(mm.PyModPiece):
         p = dl.Function(self.V)
         t = 0
         
-        for n in range(self.numSteps):
+        output[0:numObs] = self.ObservationOperator(p_nm1)
+        output[numObs:2*numObs] = self.ObservationOperator(p_n)
+        
+        for n in range(2, self.numSteps):
             # Update current timtime
             t += self.dt
 
             # Compute solution
             dl.solve(a == L, p)
+            
+            output[n*numObs:(n+1)*numObs] = self.ObservationOperator(p)
 
             # Update previous solution
             p_nm1.assign(p_n)
             p_n.assign(p)           
         
-        self.outputs = [p.vector().get_local()]
+        self.outputs = [output]
