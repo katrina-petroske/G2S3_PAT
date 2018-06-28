@@ -27,7 +27,7 @@ class PAT_forward(mm.PyModPiece):
         
     def ObservationOperator(self, p):
         p_arr = p.vector().get_local()
-        return p_arr[0:self.numObs]
+        return p_arr[self.obs_indices]
             
     def EvaluateImpl(self, inputs):
         """
