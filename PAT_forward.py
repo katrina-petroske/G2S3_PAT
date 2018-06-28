@@ -3,10 +3,12 @@ sys.path.insert(0,'/home/fenics/Installations/MUQ_INSTALL/lib')
 import pymuqModeling as mm
 import dolfin as dl
 import numpy as np
+from hippylib import nb
+import matplotlib.pyplot as plt
 
 class PAT_forward(mm.PyModPiece):
     
-    def __init__(self, time_final, numSteps, c, V, numObs):
+    def __init__(self, time_final, numSteps, c, V, numObs, nx):
         """ 
         INPUTS:
         
@@ -15,13 +17,51 @@ class PAT_forward(mm.PyModPiece):
         mm.PyModPiece.__init__(self, [V.dim()],[numObs * numSteps])
         
         np.random.seed(1337)
-        self.obs_indices = np.random.choice(V.dim(), numObs)          
+        self.obs_indices = np.random.choice(V.dim(), numObs) 
+        
+        obs = set([4])
+        cur_obs_ver = 4
+        cur_obs_hor = 4
+        ver_incr = 3
+        hor_incr = 4
+        for i in range(nx-2):
+            cur_obs_ver += ver_incr
+            ver_incr += 1
+            obs.add(cur_obs_ver)
+    
+            cur_obs_hor += hor_incr
+            hor_incr += 1
+            obs.add(cur_obs_hor)
+    
+        temp = cur_obs_ver
+        cur_obs_ver = cur_obs_hor
+        cur_obs_hor = temp
+        ver_incr = nx
+        hor_incr = nx+1
+        for i in range(nx-2):
+            cur_obs_ver += ver_incr
+            ver_incr -= 1
+            obs.add(cur_obs_ver)
+    
+            cur_obs_hor += hor_incr
+            hor_incr -= 1
+            obs.add(cur_obs_hor)
+        self.obs_indices = list(obs)
+        self.numObs = 2*(nx-1)+2*(nx-3)
+        
+#         f = dl.Function(V)
+#         vals = np.zeros(V.dim())
+#         vals[self.obs_indices] = 50
+#         f.vector().set_local(vals)
+#         nb.plot(f)
+#         plt.title("observation locations")
+#         plt.show()
+        
         self.T_f = time_final
         self.numSteps = numSteps
         self.dt = self.T_f / self.numSteps
         self.c = c
         self.V = V
-        self.numObs = numObs
         self.p_trial = dl.TrialFunction(self.V)
         self.v = dl.TestFunction(self.V)
         
@@ -63,6 +103,9 @@ class PAT_forward(mm.PyModPiece):
 
             # Compute solution
             dl.solve(a == L, p)
+#             nb.plot(p)
+#             plt.title("p")
+#             plt.show()
             
             output[n*numObs:(n+1)*numObs] = self.ObservationOperator(p)
 
