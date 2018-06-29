@@ -15,7 +15,8 @@ class Optical_forward(mm.PyModPiece):
 
         
         """
-        mm.PyModPiece.__init__(self, [V.dim(), V.dim()],[V.dim()])
+        #mm.PyModPiece.__init__(self, [V.dim(), V.dim()],[V.dim()])
+        mm.PyModPiece.__init__(self, [V.dim()],[V.dim()])
         
         self.Gamma = Gamma
         self.V = V
@@ -38,8 +39,8 @@ class Optical_forward(mm.PyModPiece):
         """
         sigma = dl.Function(self.V)
         sigma.vector().set_local(inputs[0])
-        mu = dl.Function(self.V)
-        mu.vector().set_local(inputs[1])
+#         mu = dl.Function(self.V)
+#         mu.vector().set_local(inputs[1])
         
         def boundary(x,on_boundary):
             return on_boundary
@@ -53,7 +54,7 @@ class Optical_forward(mm.PyModPiece):
         #    mu * abs(u) * u * self.u_test * dl.dx 
         F_fwd = dl.inner(self.gamma * dl.grad(self.u_trial), dl.grad(self.u_test)) * dl.dx + \
             sigma * self.u_trial * self.u_test * dl.dx 
-        a, L = dl.rhs(F_fwd), dl.lhs(F_fwd)
+        a, L = dl.lhs(F_fwd), dl.rhs(F_fwd)
         
         #dl.solve(F_fwd == 0, u, bcs = bc_state, solver_parameters={"newton_solver":{"relative_tolerance":1e-6}})
         dl.solve(a == L, u, bcs = bc_state)
