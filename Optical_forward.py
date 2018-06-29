@@ -48,16 +48,21 @@ class Optical_forward(mm.PyModPiece):
         bc_state = dl.DirichletBC(self.V, g, boundary)
         
         u = dl.Function(self.V)
-        F_fwd = dl.inner(self.gamma * dl.grad(u), dl.grad(self.u_test)) * dl.dx + \
-            sigma * u * self.u_test * dl.dx + \
-            mu * abs(u) * u * self.u_test * dl.dx 
+        #F_fwd = dl.inner(self.gamma * dl.grad(u), dl.grad(self.u_test)) * dl.dx + \
+        #    sigma * u * self.u_test * dl.dx + \
+        #    mu * abs(u) * u * self.u_test * dl.dx 
+        F_fwd = dl.inner(self.gamma * dl.grad(self.u_trial), dl.grad(self.u_test)) * dl.dx + \
+            sigma * self.u_trial * self.u_test * dl.dx 
+        a, L = dl.rhs(F_fwd), dl.lhs(F_fwd)
         
-        dl.solve(F_fwd == 0, u, bcs = bc_state, solver_parameters={"newton_solver":{"relative_tolerance":1e-6}})
+        #dl.solve(F_fwd == 0, u, bcs = bc_state, solver_parameters={"newton_solver":{"relative_tolerance":1e-6}})
+        dl.solve(a == L, u, bcs = bc_state)
         
-        H = dl.project(self.Gamma * sigma * u + self.Gamma * mu * u * abs(u), self.V)
+        #H = dl.project(self.Gamma * sigma * u + self.Gamma * mu * u * abs(u), self.V)
+        H = dl.project(self.Gamma * sigma * u, self.V)
         
-        nb.plot(H)
-        plt.title("Output H")
-        plt.show()
+#         nb.plot(H)
+#         plt.title("Output H")
+#         plt.show()
         
         self.outputs = [H.vector().get_local()]
